@@ -1,7 +1,9 @@
 """
 this module provides classes and methods neccesary for searching data in source DataFrame
 """
-from ptbmicrobio.common.data import bacteria_species
+import pandas as pd
+from ptbmicrobio.common.data import taxonomic_data
+from typing import Union
 
 
 class TaxonQuery:
@@ -21,9 +23,9 @@ class TaxonQuery:
             return s1 == s2
         return s1 in s2
 
-    def find_taxon(self, column, value, strict=True):
+    def find_taxon(self, column, value, strict=True) -> Union[pd.DataFrame, None]:
         """
-        finds matching taxon name in one column of the input dataframe
+        finds matching value in one column of the input dataframe
         """
         value_low = value.lower()
         matching = [name for name in self.df[column].unique() if self._match(value_low, name.lower(),strict=strict )]
@@ -34,16 +36,38 @@ class TaxonQuery:
         else:
             return None
 
-    def find_any(self, value, strict=True):
+    def find_any(self, value, strict=True) -> Union[list, None]:
+        """
+        finds value in all columns of the self.df and returns in a list
+        """
         dfs = [self.find_taxon(column, value, strict=strict) for column in self.df.columns]
         dfs = [df for df in dfs if df is not None and df.size > 0]
         return dfs or None
 
-    def __call__(self, value, strict=True):
+    @staticmethod
+    def _preprocess_value(value):
+        spl = value.split(' ')
+        if len(spl) > 2:
+            spl = spl[:2]
+        if len(spl) == 2 and spl[1].lower() in ('species', 'sp', 'sp.'):
+            spl = spl[:1]
+
+        return ' '.join(spl)
+
+    def __call__(self, value, strict=True, force=True) -> Union[list, pd.DataFrame, None]:
+        value = self._preprocess_value(value)
+
         if self.column in self.df.columns:
-            return self.find_taxon(self.column, value, strict=strict)
+            returnable =  self.find_taxon(self.column, value, strict=strict)
+
         else:
-            return self.find_any(value, strict=strict)
+            returnable = self.find_any(value, strict=strict)
+
+        if force and returnable is None:
+            value = value.split(' ')[0]
+            returnable = self(value, strict=strict, force=False)
+
+        return returnable
 
 
 class TaxonomyFinder:
@@ -60,11 +84,11 @@ class TaxonomyFinder:
     def __getattr__(self, item):
         return self(item) or self.__getattribute__(item)
 
-    def __call__(self, item, strict=True):
+    def __call__(self, item, strict=True) -> TaxonQuery:
         item = item in self.df.columns and item or None
         return TaxonQuery(self.df, item, strict=strict)
 
 
-find = TaxonomyFinder(bacteria_species)
+find = TaxonomyFinder(taxonomic_data)
 
 

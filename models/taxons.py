@@ -3,15 +3,15 @@ this module defines basic taxon classes
 
 """
 import pandas as pd
-from .interface import find, bacteria_species
+from .interface import find, taxonomic_data
 from itertools import chain
-from typing import Union
+from collections import Iterable
 
 
-def _flexible_return(array: Union[tuple, list], first: bool) -> tuple:
+def _flexible_return(array: Iterable, first: bool) -> tuple:
     """
-    returns tuple if returning value is a tuple,
-    unlels first is set to True, than it returns first member of the iterable
+    returns passed iterable if it is truthy, otherwise returns None
+    If parameter 'first' is set to True, than it returns first member of the iterable
     """
     if not array:
         return None
@@ -23,12 +23,13 @@ class TaxonomicDataFrame(pd.DataFrame):
     pandas.DataFrame wrapper for additional method get_taxons
     """
     def get_taxons(self, item):
-        if item in TAXONS and item in self.columns:
+        if item in self.columns:
             tax = TAXONS[item]
-            tax = sorted(list({tax(val) for val in self[item]}), key=lambda x: repr(x))
+            tax = sorted(list({tax(val) for val in self[item].unique()}), key=lambda x: repr(x))
             first = len(tax) == 1
             return _flexible_return(tax, first)
         return None
+
 
 
 class Taxonomy:
@@ -47,7 +48,7 @@ class Taxonomy:
     @staticmethod
     def find_branches(taxon):
         col = taxon.__class__.__name__.lower()
-        rows = bacteria_species[bacteria_species[col] == taxon.name]
+        rows = taxonomic_data[taxonomic_data[col] == taxon.name]
         return TaxonomicDataFrame(rows)
 
 
@@ -63,7 +64,7 @@ class Taxon:
         return self.__getattribute__(item)
 
     def __hash__(self):
-        return hash(self.__repr__())
+        return hash(str(id(self)))
 
     def __eq__(self, other):
         if not isinstance(other, Taxon):
@@ -91,6 +92,13 @@ class Taxon:
             rows = find(col)(value, strict=strict)
             result = cls._instantiate_found(cls, rows, col)
             return _flexible_return(result, first)
+
+    @property
+    def valid(self):
+        try:
+            return self.domain
+        except AttributeError:
+            return False
 
 
 class Domain(Taxon):
