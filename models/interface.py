@@ -73,7 +73,8 @@ class TaxonQuery:
 class TaxonomyFinder:
     """
     this class instance delivers 2 functionalities:
-    1) it works on its own as an independant object. Ist attributes are projected to source dateframe columns when creatin TexonQuery
+    1) it works on its own as an independant object.
+    Its attributes are projected to source dateframe columns when creating TexonQuery
     TaxonFinder(df).genus -> TaxonQuery instance working in df['genus']
     2) is callable so can be used with source dataframe column insted:
     TaxonFinder(df)('genus') -> TaxonQuery instance working in df['genus']

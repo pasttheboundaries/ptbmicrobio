@@ -1,27 +1,15 @@
 """
-OrdinalVectoriser
-provides means to vectorise ptbmicrobio taxons
-This is achieved be applying enumeration to sorted taxonomy_data table
-By this means the vectors up to Genus of one taxon group will be located close to each other in the vectorspace.
-The taxon groups above will be located at the mean values.
-This is deceptive as the correlation and vector proximity in that case will be in the middle of ordinal space.
-For example
-vector for Genus : staphylococcus will be closest to Staphylococcus hominis
-which has no particular meanin
-apart from Staphylococcus agnetis beining in the middle of ordinal (alphabetical) values for staphylococcus species.
-
-In this respect OrdinalVectoriser produces naive vectors distributed in ordinal vector space.
-This means proximity of vectors has no other meaning than just alphabetical proximity.
+this is an experimental module due for further development
 
 """
 
-from hisforsee.common.validation import validate_type
+from ptbmicrobio.common.validation import validate_type
 from ptbmicrobio import taxonomic_data, Taxon
-from ptbmicrobio.models.ast import Sensitivity
+from .ast import Sensitivity
+from ptbmicrobio.common.decorators import experimental
 import pandas as pd
 from cantibiotics import GROUPS
 from itertools import chain
-
 import numpy as np
 
 
@@ -39,7 +27,25 @@ def enumerate_df_categoricals(df, normalized=True):
     return df
 
 
-class OrdinalVectoriser:
+@experimental
+class OrdinalVectorizer:
+    """
+    OrdinalVectorizer
+    provides means to vectorise ptbmicrobio taxons
+    This is achieved be applying enumeration to sorted taxonomy_data table
+    By this means the vectors up to Genus of one taxon group will be located close to each other in the vectorspace.
+    The taxon groups above will be located at the mean values.
+    This is deceptive as the correlation and vector proximity in that case will be in the middle of ordinal space.
+    For example
+    vector for Genus : staphylococcus will be closest to Staphylococcus hominis
+    which has no particular meaning
+    apart from Staphylococcus hominis beining in the middle of ordinal (alphabetical) values for staphylococcus species.
+
+    In this respect OrdinalVectorizer produces naive vectors distributed in ordinal vector space.
+    This means proximity of vectors has no other meaning than just alphabetical proximity.
+
+    """
+
     VALID_TYPE = Taxon
 
     def __init__(self, normalised=True):
@@ -47,16 +53,16 @@ class OrdinalVectoriser:
         self.vectorised_data = enumerate_df_categoricals(taxonomic_data.copy().astype('category'),
                                                          normalized=normalised)
 
-    def vectorise(self, taxon):
+    def vectorize(self, taxon):
         validate_type(taxon, self.VALID_TYPE, parameter_name='taxon',
-                      error_message=f'OrdinalVectoriser can only vectorise {self.VALID_TYPE}.'
+                      error_message=f'OrdinalVectorizer can only vectorise {self.VALID_TYPE}.'
                                     f' Got type {type(taxon)}')
         taxonomy_df = taxon.taxonomy
         inds = list(taxonomy_df.index)
         vectorised_df = self.vectorised_data.loc[inds, :]
         col_means = vectorised_df.mean(axis=0)
-        print(vectorised_df)
-        print(col_means)
+        # print(vectorised_df)
+        # print(col_means)
 
         ind = vectorised_df.index[0]
 
@@ -78,12 +84,12 @@ class OrdinalVectoriser:
         return vectorised
 
     def __call__(self, taxon):
-        return self.vectorise(taxon)
+        return self.vectorize(taxon)
 
 
-class ASLVectoriser:
-    def __init__(self):
-        pass
+class ASLVectorizer:
+    def __init__(self, grouped=True):
+        self.grouped = grouped
 
     @staticmethod
     def _deliver_by_antibiotic(antibiotic_sensitivity_list):
@@ -114,12 +120,12 @@ class ASLVectoriser:
         senses.update(grouped_asensitivities)  # update accordingly
         return np.array(tuple(senses.values()))
 
-    def vectorise(self, antibiotic_sensitivity_list, grouped=False):
-        if grouped:
+    def vectorize(self, antibiotic_sensitivity_list):
+        if self.grouped:
             return self._deliver_by_group(antibiotic_sensitivity_list)
         else:
             return self._deliver_by_antibiotic(antibiotic_sensitivity_list)
 
 
-    def __call__(self, antibiotic_sensitivity_list, grouped=True):
-        return self.vectorise(antibiotic_sensitivity_list, grouped=grouped)
+    def __call__(self, antibiotic_sensitivity_list):
+        return self.vectorize(antibiotic_sensitivity_list)

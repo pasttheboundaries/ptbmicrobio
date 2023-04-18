@@ -1,6 +1,6 @@
 
 from typing import Any, Type
-from collections import Iterable
+from collections.abc import Iterable
 from ptbmicrobio.common.errors import ValidationException, MembershipError
 
 

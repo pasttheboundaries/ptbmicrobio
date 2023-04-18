@@ -5,7 +5,7 @@ this module defines basic taxon classes
 import pandas as pd
 from .interface import find, taxonomic_data
 from itertools import chain
-from collections import Iterable
+from collections.abc import Iterable
 
 
 def _flexible_return(array: Iterable, first: bool) -> tuple:
@@ -31,13 +31,12 @@ class TaxonomicDataFrame(pd.DataFrame):
         return None
 
 
-
 class Taxonomy:
     """
     descriptor for Taxon.taxonomy attribute
-    Extraxtes rows matching the Taxon instance and wraps them in TaxonomicalDataFrame
-    so further taxon of kin can be aextraxted
-    like in
+    Extractes rows matching the Taxon instance and wraps them in TaxonomicalDataFrame
+    so further taxon of kin can be extraxted
+    like in:
     t = Taxon('salmonella')
     tax = t.taxonomy  # type:TaxonomicDataFrame
     tax.genus -> list of related genus or instance of genus
@@ -96,7 +95,7 @@ class Taxon:
     @property
     def valid(self):
         try:
-            return self.domain
+            return bool(self.domain)
         except AttributeError:
             return False
 

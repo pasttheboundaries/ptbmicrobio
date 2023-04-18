@@ -9,7 +9,9 @@ from typing import Optional
 from dataclasses import dataclass, field
 
 
-SENSITIVITY_ENCODED = {'r': 0, 's': 1, 'i': 0.5, 'u': -1}
+SENSITIVITY_ENCODED = {'r': 0, 's': 1, 'i': 0.5, 'u': 0.5}
+
+translation_polish = translation = {'w': 's', 'o': 'r'}
 
 
 class Sensitivity(Enum):
@@ -18,11 +20,12 @@ class Sensitivity(Enum):
     sensitive = 's'
     unknown = 'u'
 
+
     @classmethod
     def polish(cls, s:str):
-        translation = {'w':'s', 'o':'r'}
+        s = s.lower()
         validate_type(s, str, parameter_name='s')
-        validate_in(s.lower(), tuple(translation.keys()))
+        validate_in(s, translation_polish.keys())
         return cls(translation[s])
 
     @property
