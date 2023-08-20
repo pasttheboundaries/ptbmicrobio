@@ -49,3 +49,4 @@ def validate_in(obj: Any,
 
     if not obj in container:
         raise MembershipError(error_message)
+

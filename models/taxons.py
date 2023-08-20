@@ -3,12 +3,15 @@ this module defines basic taxon classes
 
 """
 import pandas as pd
+import numpy as np
 from .interface import find, taxonomic_data
 from itertools import chain
 from collections.abc import Iterable
+from typing import Union, NoReturn
+from ptbmicrobio.common.validation import validate_type
 
 
-def _flexible_return(array: Iterable, first: bool) -> tuple:
+def _flexible_return(array: Iterable, first: bool) -> Union[tuple, NoReturn]:
     """
     returns passed iterable if it is truthy, otherwise returns None
     If parameter 'first' is set to True, than it returns first member of the iterable
@@ -25,7 +28,8 @@ class TaxonomicDataFrame(pd.DataFrame):
     def get_taxons(self, item):
         if item in self.columns:
             tax = TAXONS[item]
-            tax = sorted(list({tax(val) for val in self[item].unique()}), key=lambda x: repr(x))
+            applicable =[x for x in self[item].unique() if x is not np.nan]
+            tax = sorted(list({tax(val) for val in applicable}), key=lambda x: repr(x))
             first = len(tax) == 1
             return _flexible_return(tax, first)
         return None
@@ -46,18 +50,27 @@ class Taxonomy:
 
     @staticmethod
     def find_branches(taxon):
-        col = taxon.__class__.__name__.lower()
+        # col = taxon.__class__.__name__.lower()
+        col = taxon.__class__.__name__
         rows = taxonomic_data[taxonomic_data[col] == taxon.name]
+        rows = rows.reset_index(drop=True)
         return TaxonomicDataFrame(rows)
 
 
 class Taxon:
+    """
+    Base class for other taxon classes.
+    Also used as an entry point for taxon search with Taxon.find() class method.
+
+    """
     taxonomy = Taxonomy()
 
-    def __init__(self, name):
+    def __init__(self, name: str):
+        validate_type(name, str, parameter_name='name')
         self.name = name
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str):
+        validate_type(item, str, parameter_name='item')
         if item in TAXONS:
             return self.taxonomy.get_taxons(item)
         return self.__getattribute__(item)
@@ -66,8 +79,7 @@ class Taxon:
         return hash(str(id(self)))
 
     def __eq__(self, other):
-        if not isinstance(other, Taxon):
-            raise TypeError(f'Could not compare Taxon to {type(other)}')
+        validate_type(other, Taxon, parameter_name='other', error_message=f'Could not compare Taxon to {type(other)}')
         return repr(self) == repr(other)
 
     def __repr__(self):
@@ -81,13 +93,14 @@ class Taxon:
             return tuple(cls(name) for name in df[col])
 
     @classmethod
-    def find(cls, value, strict=False, first=False):
+    def find(cls, value=None, strict=False, first=False):
         if cls == Taxon:
             li = [tax.find(value, strict) for tax in TAXONS.values()]
             li = [member for member in li if member]
             return _flexible_return(tuple(chain(*li)), first)
         else:
-            col = cls.__name__.lower()
+            # col = cls.__name__.lower()
+            col = cls.__name__
             rows = find(col)(value, strict=strict)
             result = cls._instantiate_found(cls, rows, col)
             return _flexible_return(result, first)
@@ -108,7 +121,7 @@ class Phylum(Taxon):
     pass
 
 
-class Klass(Taxon):
+class Class(Taxon):
     pass
 
 
@@ -128,4 +141,4 @@ class Species(Taxon):
     pass
 
 
-TAXONS = {t.__name__.lower(): t for t in Taxon.__subclasses__()}
+TAXONS = {t.__name__: t for t in Taxon.__subclasses__()}

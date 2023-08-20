@@ -2,6 +2,7 @@
 this module provides classes and methods neccesary for searching data in source DataFrame
 """
 import pandas as pd
+import numpy as np
 from ptbmicrobio.common.data import taxonomic_data
 from typing import Union
 
@@ -27,11 +28,12 @@ class TaxonQuery:
         """
         finds matching value in one column of the input dataframe
         """
-        value_low = value.lower()
-        matching = [name for name in self.df[column].unique() if self._match(value_low, name.lower(),strict=strict )]
+        names = self.df[column].unique()
+        names = [n for n in names if not n is np.nan]
+        matching = [name for name in names if self._match(value.lower(), name.lower(), strict=strict)]
         if matching:
             rows = self.df[self.df[column].apply(lambda x: x in matching)]
-            rows = rows.loc[:, : column].drop_duplicates().reset_index()
+            rows = rows.loc[:, : column].drop_duplicates().reset_index(drop=True)
             return rows
         else:
             return None
@@ -51,14 +53,19 @@ class TaxonQuery:
             spl = spl[:2]
         if len(spl) == 2 and spl[1].lower() in ('species', 'sp', 'sp.'):
             spl = spl[:1]
-
         return ' '.join(spl)
 
-    def __call__(self, value, strict=True, force=True) -> Union[list, pd.DataFrame, None]:
+    def __call__(self, value, strict=True, force=False) -> Union[list, pd.DataFrame, None]:
+        """
+        :param value: str
+        :param strict: bool -valu comparison either "==" or "in"
+        :param force: bool - experimental
+        :return:
+        """
         value = self._preprocess_value(value)
 
         if self.column in self.df.columns:
-            returnable =  self.find_taxon(self.column, value, strict=strict)
+            returnable = self.find_taxon(self.column, value, strict=strict)
 
         else:
             returnable = self.find_any(value, strict=strict)

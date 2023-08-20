@@ -1,5 +1,8 @@
 """
-This package delivers bacterial taxonomy for 17194 bacterial species
+This package delivers bacterial taxonomy for over 30000 bacterial species
+
+original data come from:
+''
 
 
 Usage note:
@@ -16,7 +19,11 @@ import os
 
 LOCAL_PATH = os.path.dirname(__file__)
 from .models.interface import find
-from .models.taxons import TAXONS, Taxon, Domain, Phylum, Klass, Order, Family, Genus, Species, TaxonomicDataFrame
+from .models.taxons import TAXONS, Taxon, Domain, Phylum, Class, Order, Family, Genus, Species, TaxonomicDataFrame
 from .common.data import taxonomic_data
+
+__version__ = 1.0
+__author__ = 'pasttheboundaries@gmail.com'
+
 # from .experimental.vectorization import OrdinalVectorizer
 

@@ -1,0 +1,237 @@
+# ptbmicrobio
+# nominal taxonomy of bacteria with taxon classes
+# see use below:
+
+>>> from ptbmicrobio import Genus, Species, Class, Taxon, Family, find
+
+
+# object find uses its attributes as taxon names to find declared name in the related taxon
+# parameter strict allows for partial names
+# output data is pandas.DataFrame
+# taxon names start with a capital letter
+
+>>> dat = find.Species('staphylococcus aure', strict=False)
+>>> type(dat)
+pandas.core.frame.DataFrame
+
+>>> dat
+Domain	Phylum	Class	Order	Family	Genus	Species
+0	Bacteria	Bacillota	Bacilli	Caryophanales	Staphylococcaceae	Staphylococcus	Staphylococcus aureus
+
+# But if declared name is not in a proper bacteria taxon name - it will return None
+
+# 1 there is no genus "staphylococcus aure" - this is name of a species
+>>> print(type(find.Genus('staphylococcus aure', strict=False)))
+<class 'NoneType'>
+
+# 2 there is no gspecies "staphylococcus aure" - but the strict parameter is set to False - the algorythm uses inclusion when comparing names("staphylococcus aure" is in "staphylococcus aureus")
+>>> print(type(find.Species('staphylococcus aure', strict=False)))
+<class 'pandas.core.frame.DataFrame'>
+
+# 3 there is no genus "staphylococcu" but again strict is False
+>>> print(type(find.Genus('staphylococcu', strict=False)))
+<class 'pandas.core.frame.DataFrame'>
+
+
+# Be careful with spelling when using strict match
+
+>>> genus = find.Genus('staphylococcu', strict=1)
+>>> genus is None
+True
+
+
+# The taxon sublasses implement class method find as well, but instead of returning pandas DataFrame they return instances of Taxon if there are multiple matches - a tuple will be returned:
+
+>>> Species.find('staphylococcus aur', strict=0)
+(<Species: Staphylococcus aureus>, <Species: Staphylococcus auricularis>)
+
+# If parameter first is declared , the first of the tuple will be returned.
+# This might be useful if an example of a group is needed or just a valid representative of genus.
+# Also finding is case-insensitive, even in the strict mode
+
+>>> print(Species.find('staphylococcus', strict=False, first=True))
+<Species: Staphylococcus agnetis>
+
+>>> print(Genus.find('staphylococcus', strict=True, first=True))
+<Genus: Staphylococcus>
+
+
+# If find is used with "taxon", a list of suiting dataframe slices will be returned.
+# Note that length of rows is different depending on where the matching value was found.
+# Only parent taxons are included in such a slice.
+
+>>> li = find.taxon('enterococcus', strict=False)
+>>> print('{:<50}{}'.format('return list length', len(li)))
+>>> print('{:<50}{}'.format('returned type', type(li)))
+>>> print('{:<50}{}'.format('included type', type(li[0])))
+>>> print('{:<50}{}'.format('first included DataFrame shape', li[0].shape))
+>>> print('{:<50}{}'.format('second included DataFrame shape', li[1].shape))
+
+return list length                                2
+returned type                                     <class 'list'>
+included type                                     <class 'pandas.core.frame.DataFrame'>
+first included DataFrame shape                    (1, 6)
+second included DataFrame shape                   (79, 7)
+
+# In the example above:
+# - the first element is a result of finding Genus enterococcus (1 genus)
+# - the second element is a result of finding Species including word "enterococcus" (79 species)
+# - example of finding family
+
+>>> Family.find('enterobacter', strict=0, first=1)
+<Family: Enterobacteriaceae>
+
+# if first is False - a tuple will be returned
+>>> Family.find('enterobacter', strict=0, first=0)
+(<Family: Enterobacteriaceae>,)
+
+>>>Family.find('enter', strict=0, first=0)
+(<Family: Enterococcaceae>, <Family: Enterobacteriaceae>)
+
+
+# Taxon sublclasses own property taxonomy that returns a dataframe with all related taxonomical tree branches. In this case <Family: Enterobacteriaceae>.
+
+>>> Family.find('enterobacter', strict=0, first=1).taxonomy
+Domain	Phylum	Class	Order	Family	Genus	Species
+0	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Aranicola	Aranicola proteolyticus
+1	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Arizona	Arizona arizonae
+2	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Arizona	Arizona hinshawii
+3	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Atlantibacter	Atlantibacter hermannii
+4	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Atlantibacter	Atlantibacter subterranea
+...	...	...	...	...	...	...	...
+650	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Tenebrionibacter	Tenebrionibacter intestinalis
+651	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Tenebrionicola	Tenebrionicola larvae
+652	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Trabulsiella	Trabulsiella guamensis
+653	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Trabulsiella	Trabulsiella odontotermitis
+654	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Yokenella	Yokenella regensburgei
+655 rows × 7 columns
+
+
+# attributes that are equal to taxon type name will return the relevant Taxon
+
+>>> ent = Family.find('enterobacter', 0, first=1)
+>>>ent.Domain
+<Domain: Bacteria>
+
+>>> ent.Class
+<Class: Gammaproteobacteria>
+
+
+# but if there is more relevant results - a tuple will be returned
+>>> len(ent.Species)
+648
+
+>>> Genus('Klebsiella').Species
+(<Species: Klebsiella aerogenes>,
+ <Species: Klebsiella africana>,
+ <Species: Klebsiella africanensis>,
+ <Species: Klebsiella alba>,
+ <Species: Klebsiella edwardsii>,
+ <Species: Klebsiella electrica>,
+ <Species: Klebsiella granulomatis>,
+ <Species: Klebsiella grimontii>,
+ <Species: Klebsiella huaxiensis>,
+ <Species: Klebsiella indica>,
+ <Species: Klebsiella michiganensis>,
+ <Species: Klebsiella mobilis>,
+ <Species: Klebsiella ornithinolytica>,
+ <Species: Klebsiella oxytoca>,
+ <Species: Klebsiella ozaenae>,
+ <Species: Klebsiella pasteurii>,
+ <Species: Klebsiella planticola>,
+ <Species: Klebsiella pneumoniae>,
+ <Species: Klebsiella quasipneumoniae>,
+ <Species: Klebsiella quasivariicola>,
+ <Species: Klebsiella rhinoscleromatis>,
+ <Species: Klebsiella rubiacearum>,
+ <Species: Klebsiella singaporensis>,
+ <Species: Klebsiella spallanzanii>,
+ <Species: Klebsiella terrigena>,
+ <Species: Klebsiella trevisanii>,
+ <Species: Klebsiella variicola>)
+
+
+# If method find is used in Taxon - all relevant and matching Taxon subclasses will be returned in a tuple.
+
+
+# Below: Genus Klebsiella and all Klebsiella species found.
+
+>>> s = Taxon.find('Klebsiella')
+>>> s
+(<Genus: Klebsiella>,
+ <Species: Klebsiella aerogenes>,
+ <Species: Klebsiella africana>,
+ <Species: Klebsiella africanensis>,
+ <Species: Klebsiella alba>,
+ <Species: Klebsiella edwardsii>,
+ <Species: Klebsiella electrica>,
+ <Species: Klebsiella granulomatis>,
+ <Species: Klebsiella grimontii>,
+ <Species: Klebsiella huaxiensis>,
+ <Species: Klebsiella indica>,
+ <Species: Klebsiella michiganensis>,
+ <Species: Klebsiella mobilis>,
+ <Species: Klebsiella ornithinolytica>,
+ <Species: Klebsiella oxytoca>,
+ <Species: Klebsiella ozaenae>,
+ <Species: Klebsiella pasteurii>,
+ <Species: Klebsiella planticola>,
+ <Species: Klebsiella pneumoniae>,
+ <Species: Klebsiella quasipneumoniae>,
+ <Species: Klebsiella quasivariicola>,
+ <Species: Klebsiella rhinoscleromatis>,
+ <Species: Klebsiella rubiacearum>,
+ <Species: Klebsiella singaporensis>,
+ <Species: Klebsiella spallanzanii>,
+ <Species: Klebsiella terrigena>,
+ <Species: Klebsiella trevisanii>,
+ <Species: Klebsiella variicola>)
+
+
+# Instantiation of a taxon without checking in a database is possible but if the taxon name is invalid.
+# No functionality will be possible, however this will not triger any errors.
+
+>>> s = Species('MyBacteria')
+>>> s
+<Species: MyBacteria>
+
+>>> s.Genus == None
+True
+
+>>> s.Genus = 'MyGenus'
+>>> s.Genus == 'MyGenus'
+True
+
+
+# but if a name is valid - all functionality wii be working
+
+>>> s = Species('Staphylococcus aureus')
+>>> print(s)
+>>> print(s.Genus)
+>>> print(s.Family)
+>>> print(len(s.taxonomy))
+<Species: Staphylococcus aureus>
+<Genus: Staphylococcus>
+<Family: Staphylococcaceae>
+1
+
+
+# Chaining attributes of a Taxon subclass is possible.
+
+# Below:
+# a first example of Salmonella Species is found,
+# the Genus of the above (Salmonella Species) is derived
+#all Species of the Genus is returned
+
+>>> s = Species.find('Salmonella', strict=0, first=1)
+>>> len(s.Genus.Species)
+389
+
+>>> s.Genus.Genus
+<Genus: Salmonella>
+
+>>> s.Genus.Family
+<Family: Enterobacteriaceae>
+
+>>> s.Genus.Genus.Genus
+<Genus: Salmonella>
