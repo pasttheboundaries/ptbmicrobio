@@ -1,7 +1,7 @@
 """
 This package delivers bacterial taxonomy for over 30000 bacterial species
 
-original data come from:
+original pairs_generator come from:
 ''
 
 
@@ -20,9 +20,9 @@ import os
 LOCAL_PATH = os.path.dirname(__file__)
 from .models.interface import find
 from .models.taxons import TAXONS, Taxon, Domain, Phylum, Class, Order, Family, Genus, Species, TaxonomicDataFrame
-from .common.data import taxonomic_data
+from .common.data import load_taxonomic_data
 
-__version__ = 1.0
+__version__ = 1.1
 __author__ = 'pasttheboundaries@gmail.com'
 
 # from .experimental.vectorization import OrdinalVectorizer

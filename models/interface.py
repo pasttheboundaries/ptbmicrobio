@@ -1,9 +1,9 @@
 """
-this module provides classes and methods neccesary for searching data in source DataFrame
+this module provides classes and methods neccesary for searching pairs_generator in source DataFrame
 """
 import pandas as pd
 import numpy as np
-from ptbmicrobio.common.data import taxonomic_data
+from ptbmicrobio.common.data import load_taxonomic_data
 from typing import Union
 
 
@@ -97,6 +97,6 @@ class TaxonomyFinder:
         return TaxonQuery(self.df, item, strict=strict)
 
 
-find = TaxonomyFinder(taxonomic_data)
+find = TaxonomyFinder(load_taxonomic_data())
 
 

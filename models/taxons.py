@@ -4,7 +4,7 @@ this module defines basic taxon classes
 """
 import pandas as pd
 import numpy as np
-from .interface import find, taxonomic_data
+from .interface import find, load_taxonomic_data
 from itertools import chain
 from collections.abc import Iterable
 from typing import Union, NoReturn
@@ -45,6 +45,11 @@ class Taxonomy:
     tax = t.taxonomy  # type:TaxonomicDataFrame
     tax.genus -> list of related genus or instance of genus
     """
+    data = load_taxonomic_data()
+
+    def __init__(self):
+        self.td = load_taxonomic_data()
+
     def __get__(self, instance, owner):
         return self.find_branches(instance)
 
@@ -52,7 +57,7 @@ class Taxonomy:
     def find_branches(taxon):
         # col = taxon.__class__.__name__.lower()
         col = taxon.__class__.__name__
-        rows = taxonomic_data[taxonomic_data[col] == taxon.name]
+        rows = Taxonomy.data[Taxonomy.data[col] == taxon.name]
         rows = rows.reset_index(drop=True)
         return TaxonomicDataFrame(rows)
 
