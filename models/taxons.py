@@ -7,18 +7,20 @@ import numpy as np
 from .interface import find, load_taxonomic_data
 from itertools import chain
 from collections.abc import Iterable
-from typing import Union, NoReturn
+from typing import Union, NoReturn, Optional
 from ptbmicrobio.common.validation import validate_type
 
 
-def _flexible_return(array: Iterable, first: bool) -> Union[tuple, NoReturn]:
+def _flexible_return(array: Union[tuple, None], first: bool = None, last: bool = None) -> Union[tuple, NoReturn]:
     """
     returns passed iterable if it is truthy, otherwise returns None
     If parameter 'first' is set to True, than it returns first member of the iterable
+    If parameter 'last' is set to True, than it returns last member of the iterable
+    first has precedence over last if both are set to true
     """
     if not array:
         return None
-    return first and array[0] or tuple(array)
+    return (first and array[0]) or (last and array[-1]) or tuple(array)
 
 
 class TaxonomicDataFrame(pd.DataFrame):
@@ -91,24 +93,36 @@ class Taxon:
         return f'<{self.__class__.__name__}: {self.name}>'
 
     @staticmethod
-    def _instantiate_found(cls, df, col):
-        if df is None or len(df) == 0:
+    def _instantiate_found(taxon_cls, dfs, col) -> Union[None, tuple]:
+        if dfs is None or len(dfs) == 0:
             return None
         else:
-            return tuple(cls(name) for name in df[col])
+            return tuple(instance for df in dfs for instance in taxon_cls._instantiate_from_df(taxon_cls, df, col) if instance)
+
+    @staticmethod
+    def _instantiate_from_df(taxon_cls, df, col) -> tuple:
+        if df is None or len(df) == 0 or col not in df.columns:
+            return tuple()
+        else:
+            return tuple(taxon_cls(name) for name in df[col])
+
 
     @classmethod
-    def find(cls, value=None, strict=False, first=False):
+    def find(cls, value=None, strict=True, first=False, last=False, force=False):
         if cls == Taxon:
-            li = [tax.find(value, strict) for tax in TAXONS.values()]
+            """
+            if Taxin.find is used
+            (if find.Taxon is used the code searching for any is in interface.TaxonQuery)
+            """
+            li = [tax.find(value, strict, force=force) for tax in TAXONS.values()]
             li = [member for member in li if member]
-            return _flexible_return(tuple(chain(*li)), first)
+            return _flexible_return(tuple(chain(*li)), first, last)
         else:
             # col = cls.__name__.lower()
             col = cls.__name__
-            rows = find(col)(value, strict=strict)
+            rows = find(col)(value, strict=strict, force=force)
             result = cls._instantiate_found(cls, rows, col)
-            return _flexible_return(result, first)
+            return _flexible_return(result, first, last)
 
     @property
     def valid(self):

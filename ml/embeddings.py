@@ -24,6 +24,7 @@ inne funkcje Embeddings:
 
 import numpy as np
 import os
+import actree
 from ptbml.embedding import TreeNodesEmbedding
 from ptbmicrobio import load_taxonomic_data
 from ptbmicrobio import LOCAL_PATH
@@ -67,8 +68,9 @@ class TaxonomicEmbedding(TreeNodesEmbedding):
 
         samples = (capitalize_initial(s) for s in samples)
         df = load_taxonomic_data()
-        self.df = df.where(np.isin(df.values, samples)).dropna(how='all')
-        return super().embed(df=self.df,
+        df = df.loc[df.where(np.isin(df.values, samples)).dropna(how='all').index, :]
+        tree = actree.Tree.from_df(df)
+        return super().embed(tree=tree,
                              embedding_size=embedding_size,
                              epochs=epochs,
                              batch_size=batch_size,
