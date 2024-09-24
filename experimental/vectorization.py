@@ -8,7 +8,7 @@ from ptbmicrobio import taxonomic_data, Taxon
 from .ast import Sensitivity
 from ptbmicrobio.common.decorators import experimental
 import pandas as pd
-from cantibiotics import GROUPS
+# from cantibiotics import GROUPS
 from itertools import chain
 import numpy as np
 

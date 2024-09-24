@@ -24,58 +24,81 @@ inne funkcje Embeddings:
 
 import numpy as np
 import os
-import actree
-from ptbml.embedding import TreeNodesEmbedding
+import ptbtree
+import logging
+from ptbml.embedding import TreeNodeEmbedding, TreeNodePairs
 from ptbmicrobio import load_taxonomic_data
 from ptbmicrobio import LOCAL_PATH
 
+
 DATADIR_PATH = os.path.join(LOCAL_PATH, 'data')
+
+
+logger = logging.getLogger('PTB')
 
 
 def capitalize_initial(s):
     return ''.join((s[0].upper(), s[1:].lower()))
 
+def construct_weights_array(df):
+    df_width = df.shape[1]
+    df_length = df.shape[0]
+    return np.arange(df_width - 1, 0, -1) * np.ones((df_length, df_width - 1)).astype(np.float32)
 
-class FromPretrained:
-    available = {'clinical8': ['clinical8_M.tsv', 'clinical8_V.tsv'],
-                 'clinical16': ['clinical16_M.tsv', 'clinical16_V.tsv']}
+PRETRAINED = {'clinical8': ['clinical8_M.tsv', 'clinical8_V.tsv'],
+              'clinical16': ['clinical16_M.tsv', 'clinical16_V.tsv']}
 
-    def __init__(self, TE_instance):
-        self.instance = TE_instance
-
-    def __call__(self, arg):
-        if arg in self.available:
-            paths = [os.path.join(DATADIR_PATH, file) for file in self.available[arg]]
-            for path in paths:
-                self.instance.load_tsv(path)
-        return self.instance
-
-
-class TaxonomicEmbedding(TreeNodesEmbedding):
+class TaxonomicEmbedding(TreeNodeEmbedding):
 
     def __init__(self):
         super().__init__()
-        self.from_pretrained = FromPretrained(self)
 
+    @classmethod
+    def from_pretrained(cls, pretrained):
+        if pretrained in PRETRAINED:
+            paths = [os.path.join(DATADIR_PATH, file) for file in PRETRAINED[pretrained]]
+            instance = cls()
+            for path in paths:
+                instance.load_tsv(path)
+        return instance
+
+    # noinspection PyMethodOverriding
     def embed(self,
               samples,
               embedding_size=8,
               epochs=10,
               batch_size=256,
-              intermediate_filename=None,
-              from_intermediate=False,
+              intermediate_dirname=None,
+              optimizer_kwargs=None,
               verbose=1):
 
-        samples = (capitalize_initial(s) for s in samples)
-        df = load_taxonomic_data()
-        df = df.loc[df.where(np.isin(df.values, samples)).dropna(how='all').index, :]
-        tree = actree.Tree.from_df(df)
+        """
+        :param samples: a collection of bacterial names
+        :param epochs: int, default = 10
+        :param batch_size: int, default = 256
+        :param intermediate_filename: If not given
+        :param verbose:
+        :return:
+        """
+        logger.info('TaxonomicEmbedding.embed called')
+        if (not samples) and (not self.pairs_generator):
+            raise ValueError('''TaxonomicEmbeddings embedding requires samples [list of bacterial names ] 
+            or must be instantiated with from_pairs.''')
+
+        if samples:
+            samples = np.array([capitalize_initial(s) for s in samples])
+            df = load_taxonomic_data()
+            # old wrong formula : df = df.loc[df.where(np.isin(df.values, samples)).dropna(how='all').index, :]
+            df = df.loc[df[df.isin(samples)].dropna(how='all').index, :].drop_duplicates()
+            tree = ptbtree.Tree.from_df(df, weights=construct_weights_array(df))
+        else:
+            tree = None
         return super().embed(tree=tree,
-                             embedding_size=embedding_size,
                              epochs=epochs,
+                             embedding_size=embedding_size,
                              batch_size=batch_size,
-                             intermediate_filename=intermediate_filename,
-                             from_intermediate=from_intermediate,
+                             intermediate_dirname=intermediate_dirname,
+                             optimizer_kwargs=optimizer_kwargs,
                              verbose=verbose)
 
 

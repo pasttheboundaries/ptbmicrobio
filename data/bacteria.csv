@@ -1,6 +1,14 @@
 Domain,Phylum,Class,Order,Family,Genus,Species
-Bacteria,Abditibacteriota,Abditibacteria,,,,
-Bacteria,Abditibacteriota,Abditibacteriia,Abditibacteriales,Abditibacteriaceae,Abditibacterium,Abditibacterium utsteinense
+Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Gemella,Gemella asaccharolytic
+Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Gemella,Gemella bergeri
+Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Gemella,Gemella cuniculi
+Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Gemella,Gemella haemolysans
+Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Gemella,Gemella morbillorum
+Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Gemella,Gemella palaticanis
+Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Gemella,Gemella parahaemolysans
+Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Gemella,Gemella sanguinis
+Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Gemella,Gemella taiwanensis
+Bacteria,Abditibacteriota,Abditibacteria,Abditibacteriales,Abditibacteriaceae,Abditibacterium,Abditibacterium utsteinense
 Bacteria,Acidobacteriota,Blastocatellia,Blastocatellales,Arenimicrobiaceae,Arenimicrobium,Arenimicrobium luteum
 Bacteria,Acidobacteriota,Blastocatellia,Blastocatellales,Arenimicrobiaceae,Brevitalea,Brevitalea aridisoli
 Bacteria,Acidobacteriota,Blastocatellia,Blastocatellales,Arenimicrobiaceae,Brevitalea,Brevitalea deliciosa

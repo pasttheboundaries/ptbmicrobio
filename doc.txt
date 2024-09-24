@@ -10,7 +10,7 @@
 # output data is pandas.DataFrame
 # taxon names start with a capital letter
 
->>> dat = find.Species('staphylococcus aure', strict=False)
+>>> dat = find.Species('staphylococcus aure', partial=True)
 >>> type(dat)
 pandas.core.frame.DataFrame
 
@@ -21,38 +21,38 @@ Domain	Phylum	Class	Order	Family	Genus	Species
 # But if declared name is not in a proper bacteria taxon name - it will return None
 
 # 1 there is no genus "staphylococcus aure" - this is name of a species
->>> print(type(find.Genus('staphylococcus aure', strict=False)))
-<class 'NoneType'>
+>>> find.Genus('staphylococcus aure', partial=True)
+[]
 
-# 2 there is no gspecies "staphylococcus aure" - but the strict parameter is set to False - the algorythm uses inclusion when comparing names("staphylococcus aure" is in "staphylococcus aureus")
->>> print(type(find.Species('staphylococcus aure', strict=False)))
+# 2 there is no species "staphylococcus aure" - but the partial parameter is set to True - the algorythm uses inclusion when comparing names("staphylococcus aure" is in "staphylococcus aureus")
+>>> print(type(find.Species('staphylococcus aure', partial=True)))
 <class 'pandas.core.frame.DataFrame'>
 
-# 3 there is no genus "staphylococcu" but again strict is False
->>> print(type(find.Genus('staphylococcu', strict=False)))
+# 3 there is no genus "staphylococcu" but again partial is True
+>>> print(type(find.Genus('staphylococcu', partial=True)))
 <class 'pandas.core.frame.DataFrame'>
 
 
-# Be careful with spelling when using strict match
+# Be careful with spelling when using precise match (partial=False)
 
->>> genus = find.Genus('staphylococcu', strict=1)
->>> genus is None
-True
+>>> genus = find.Genus('staphylococcu', partial=False)
+>>> genus
+[]
 
 
 # The taxon sublasses implement class method find as well, but instead of returning pandas DataFrame they return instances of Taxon if there are multiple matches - a tuple will be returned:
 
->>> Species.find('staphylococcus aur', strict=0)
+>>> Species.find('staphylococcus aur', partial=True)
 (<Species: Staphylococcus aureus>, <Species: Staphylococcus auricularis>)
 
-# If parameter first is declared , the first of the tuple will be returned.
+# If parameter first or last is declared , the first or last element of the tuple will be returned.
 # This might be useful if an example of a group is needed or just a valid representative of genus.
-# Also finding is case-insensitive, even in the strict mode
+# Also finding is case-insensitive, even in the partial=False mode
 
->>> print(Species.find('staphylococcus', strict=False, first=True))
+>>> Species.find('staphylococcus', partial=True, first=True)
 <Species: Staphylococcus agnetis>
 
->>> print(Genus.find('staphylococcus', strict=True, first=True))
+>>> Genus.find('staphylococcus', partial=False, first=True)
 <Genus: Staphylococcus>
 
 
@@ -60,7 +60,7 @@ True
 # Note that length of rows is different depending on where the matching value was found.
 # Only parent taxons are included in such a slice.
 
->>> li = find.taxon('enterococcus', strict=False)
+>>> li = find.taxon('enterococcus', partial=True)
 >>> print('{:<50}{}'.format('return list length', len(li)))
 >>> print('{:<50}{}'.format('returned type', type(li)))
 >>> print('{:<50}{}'.format('included type', type(li[0])))
@@ -78,20 +78,20 @@ second included DataFrame shape                   (79, 7)
 # - the second element is a result of finding Species including word "enterococcus" (79 species)
 # - example of finding family
 
->>> Family.find('enterobacter', strict=0, first=1)
+>>> Family.find('enterobacter', partial=1, first=1)
 <Family: Enterobacteriaceae>
 
 # if first is False - a tuple will be returned
->>> Family.find('enterobacter', strict=0, first=0)
+>>> Family.find('enterobacter', partial=1, first=0)
 (<Family: Enterobacteriaceae>,)
 
->>>Family.find('enter', strict=0, first=0)
+>>>Family.find('enter', partial=1, first=0)
 (<Family: Enterococcaceae>, <Family: Enterobacteriaceae>)
 
 
 # Taxon sublclasses own property taxonomy that returns a dataframe with all related taxonomical tree branches. In this case <Family: Enterobacteriaceae>.
 
->>> Family.find('enterobacter', strict=0, first=1).taxonomy
+>>> Family.find('enterobacter', partial=1, first=1).taxonomy
 Domain	Phylum	Class	Order	Family	Genus	Species
 0	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Aranicola	Aranicola proteolyticus
 1	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Arizona	Arizona arizonae
@@ -203,7 +203,7 @@ True
 True
 
 
-# but if a name is valid - all functionality wii be working
+# but if a name is valid - all functionality will be working
 
 >>> s = Species('Staphylococcus aureus')
 >>> print(s)
@@ -221,9 +221,9 @@ True
 # Below:
 # a first example of Salmonella Species is found,
 # the Genus of the above (Salmonella Species) is derived
-#all Species of the Genus is returned
+# all Species of the Genus is returned
 
->>> s = Species.find('Salmonella', strict=0, first=1)
+>>> s = Species.find('Salmonella', partial=1, first=1)
 >>> len(s.Genus.Species)
 389
 
@@ -235,3 +235,15 @@ True
 
 >>> s.Genus.Genus.Genus
 <Genus: Salmonella>
+
+
+# parameter progressive in Taxon.find method is used for progressive search in case a string containds non-nominal values:
+>>> Taxon.find('Coagulase-negative Streptococcus', progressive=1, first=1)
+<Genus: Streptococcus>
+
+# parameter force is not implemented in this version
+
+# default values of parameters progressive, first, and partial assume a correct name is given and multiple results are allowed:
+progressive = False
+first = False
+partial = False

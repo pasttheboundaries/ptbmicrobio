@@ -1,1 +1,1 @@
-from .embeddings import TaxonomicEmbedding
+from .embeddings import TaxonomicEmbedding, TreeNodePairs
