@@ -66,10 +66,8 @@ class TaxonomicEmbedding(TreeNodeEmbedding):
     def embed(self,
               samples,
               embedding_size=8,
-              epochs=10,
-              batch_size=256,
               intermediate_dirname=None,
-              optimizer_kwargs=None,
+              training_setup=None,
               verbose=1):
 
         """
@@ -94,11 +92,9 @@ class TaxonomicEmbedding(TreeNodeEmbedding):
         else:
             tree = None
         return super().embed(tree=tree,
-                             epochs=epochs,
                              embedding_size=embedding_size,
-                             batch_size=batch_size,
                              intermediate_dirname=intermediate_dirname,
-                             optimizer_kwargs=optimizer_kwargs,
+                             setup=training_setup,
                              verbose=verbose)
 
 
