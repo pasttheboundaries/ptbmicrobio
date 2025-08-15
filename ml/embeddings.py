@@ -43,7 +43,9 @@ def capitalize_initial(s):
 def construct_weights_array(df):
     df_width = df.shape[1]
     df_length = df.shape[0]
-    return np.arange(df_width - 1, 0, -1) * np.ones((df_length, df_width - 1)).astype(np.float32)
+    # return np.arange(df_width - 1, 0, -1) * np.ones((df_length, df_width - 1)).astype(np.float32)
+    return [6, 5, 4, 3, 2, 1]
+    # return 1
 
 PRETRAINED = {'clinical8': ['clinical8_M.tsv', 'clinical8_V.tsv'],
               'clinical16': ['clinical16_M.tsv', 'clinical16_V.tsv']}
@@ -64,7 +66,7 @@ class TaxonomicEmbedding(TreeNodeEmbedding):
 
     # noinspection PyMethodOverriding
     def embed(self,
-              samples,
+              samples = None,
               embedding_size=8,
               intermediate_dirname=None,
               training_setup=None,
@@ -79,18 +81,18 @@ class TaxonomicEmbedding(TreeNodeEmbedding):
         :return:
         """
         logger.info('TaxonomicEmbedding.embed called')
-        if (not samples) and (not self.pairs_generator):
+        if (not samples) and (not intermediate_dirname):
             raise ValueError('''TaxonomicEmbeddings embedding requires samples [list of bacterial names ] 
-            or must be instantiated with from_pairs.''')
+            or intermediate dirname must be given.''')
 
         if samples:
             samples = np.array([capitalize_initial(s) for s in samples])
-            df = load_taxonomic_data()
-            # old wrong formula : df = df.loc[df.where(np.isin(df.values, samples)).dropna(how='all').index, :]
-            df = df.loc[df[df.isin(samples)].dropna(how='all').index, :].drop_duplicates()
+            df = load_taxonomic_data(*samples)
             tree = ptbtree.Tree.from_df(df, weights=construct_weights_array(df))
+        elif intermediate_dirname:
+            tree = TreeNodePairs.from_saved(intermediate_dirname)
         else:
-            tree = None
+            raise ValueError(f'TaxonomicEmbedding.embed requires eiter a list of bacreial names or a directory path to the sotred TreeNodePairs')
         return super().embed(tree=tree,
                              embedding_size=embedding_size,
                              intermediate_dirname=intermediate_dirname,

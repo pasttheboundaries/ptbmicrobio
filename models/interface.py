@@ -7,9 +7,6 @@ from typing import Union, List
 from functools import lru_cache
 
 
-
-
-
 class TaxonQuery:
     """
     Auxiliary class

@@ -41,3 +41,22 @@ def experimental(obj):
         return wrapper
     elif isinstance(obj, type):
         return manipulate_class(obj)
+
+def type_wrap_returned(type_):
+    """
+    decorator that wraps decorated function returned object in the declared type
+    :param type_:
+    :return:
+    """
+    if not isinstance(type_, type):
+        raise TypeError(f'type_wrap_returned argument must be type. Got {type(type_)}.')
+
+    def decorator(fn):
+        if not callable(fn):
+            raise ValueError(f'misused decorator?')
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            return type_(fn(*args, **kwargs))
+        return wrapper
+    return decorator
