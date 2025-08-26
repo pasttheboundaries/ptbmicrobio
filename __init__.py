@@ -22,7 +22,7 @@ from .models.interface import find
 from .models.taxons import TAXONS, Taxon, Domain, Phylum, Class, Order, Family, Genus, Species, TaxonomicDataFrame
 from .common.data import load_taxonomic_data
 from .extraction.parse_lab_results import parse_culture, parse_dataframe
-from .extraction.alert_patogens import is_alert_patogen, alert_patogen_rules, extract_alert_column
+from .extraction.alert_pathogens import is_alert_pathogen, alert_pathogen_rules, extract_alert_column
 
 __version__ = "0.1.1"
 __author__ = 'pasttheboundaries@gmail.com'

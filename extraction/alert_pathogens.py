@@ -1,5 +1,5 @@
 """
-this module provides rules to identify alert patogens according to :
+this module provides rules to identify alert pathogens according to :
 DZ.UST. RP. Poz. 240 OBWIECZENIE MINISTRA ZDROWIA z dnia 22 stycznia 2021 r.
 
 1) gronkowiec złocisty (Staphylococcus aureus) oporny na metycylinę (MRSA) lub glikopeptydy (VISA lub VRSA) lub
@@ -25,7 +25,7 @@ oksazolidynony;
 import pandas as pd
 from typing import Optional, Union
 from ..models.taxons import Taxon
-from ..common.native_types import AST, ParsedCultureResult, ParsedDataFrame
+from ..common.native_types import AST, ParsedCultureResult, ParsedDataFrame, ParsedCulture
 from ptbabx import antibiotic
 from .constants import RESISTANT
 from functools import lru_cache
@@ -41,21 +41,21 @@ CEPHALOSPORINS3 = antibiotic('ceftazydym').group
 
 
 @lru_cache(maxsize=200)
-def taxon_find(patogen_name):  # this is a proxy for memoisation purposes
-    tax =  Taxon.find(patogen_name, first=True)
+def taxon_find(pathogen_name):  # this is a proxy for memoisation purposes
+    tax =  Taxon.find(pathogen_name, first=True)
     if not tax:
-        tax = Taxon.find(patogen_name, first=True, progressive=True)
+        tax = Taxon.find(pathogen_name, first=True, progressive=True)
     return tax
 
 
-def match_taxon(patogen_name: str, taxon_tier_name: str, taxon_name_match: str) -> bool:
+def match_taxon(pathogen_name: str, taxon_tier_name: str, taxon_name_match: str) -> bool:
     """
-    :param patogen_name: name to be verified
+    :param pathogen_name: name to be verified
     :param taxon_tier_name: Species, Genus or Family
     :param taxon_name_match: name of the matching taxon
     :return: bool
     """
-    taxon = getattr(taxon_find(patogen_name), taxon_tier_name, None)
+    taxon = getattr(taxon_find(pathogen_name), taxon_tier_name, None)
     if not taxon:
         return False
     elif isinstance(taxon, tuple):  # not matching taxon tiers
@@ -93,17 +93,17 @@ def match_antibiotic_group_resistant(ast, antibiotic_group_name: str):
     return False
 
 
-def rule1(patogen_name: str, ast: AST, notes: Optional[str] = None):
+def rule1(pathogen_name: str, ast: AST, notes: Optional[str] = None):
     """
     rule1 refers to:
     1) gronkowiec złocisty (Staphylococcus aureus) oporny na metycylinę (MRSA) lub glikopeptydy (VISA lub VRSA) lub
         oksazolidynony
-    :param patogen_name: str - name of patogen to be checked
+    :param pathogen_name: str - name of pathogen to be checked
     :param ast: AST (parsed ast, ParsedData subclass instance)
     :param notes:
     :return:
     """
-    if not match_taxon(patogen_name, 'Species', 'Staphylococcus aureus'):
+    if not match_taxon(pathogen_name, 'Species', 'Staphylococcus aureus'):
         return False
     if notes and any(val in notes.lower() for val in ('mrsa', 'visa', 'vrsa')):
         return True
@@ -112,16 +112,16 @@ def rule1(patogen_name: str, ast: AST, notes: Optional[str] = None):
     return False
 
 
-def rule2(patogen_name: str, ast: AST, notes: Optional[str] = None):
+def rule2(pathogen_name: str, ast: AST, notes: Optional[str] = None):
     """
     rule2 refers to:
         2) enterokoki (Enterococcus spp.) oporne na glikopeptydy (VRE) lub oksazolidynony;
-    :param patogen_name: str - name of patogen to be checked
+    :param pathogen_name: str - name of pathogen to be checked
     :param ast: AST (parsed ast, ParsedData subclass instance)
     :param notes:
     :return:
         """
-    if not match_taxon(patogen_name, 'Genus', 'Enterococcus'):
+    if not match_taxon(pathogen_name, 'Genus', 'Enterococcus'):
         return False
     if notes and 'vre' in notes.lower():
         return True
@@ -130,7 +130,7 @@ def rule2(patogen_name: str, ast: AST, notes: Optional[str] = None):
     return False
 
 
-def rule345(patogen_name: str, ast: AST, notes: Optional[str] = None):
+def rule345(pathogen_name: str, ast: AST, notes: Optional[str] = None):
     """
     rule345 refers to:
         3) pałeczki Gram-ujemne Enterobacteriaceae spp. wytwarzające beta-laktamazy
@@ -149,17 +149,17 @@ def rule345(patogen_name: str, ast: AST, notes: Optional[str] = None):
         lub inne dwie grupy
         leków lub polimyksyny;
 
-    :param patogen_name: str - name of patogen to be checked
+    :param pathogen_name: str - name of pathogen to be checked
     :param ast: AST (parsed ast, ParsedData subclass instance)
     :param notes:
     :return:
     """
     if not (
-            match_taxon(patogen_name, 'Family', 'Enterobacteriaceae')
+            match_taxon(pathogen_name, 'Family', 'Enterobacteriaceae')
             and
-            match_taxon(patogen_name, 'Species', 'Pseudomona aeruginosa')
+            match_taxon(pathogen_name, 'Species', 'Pseudomona aeruginosa')
             and
-            not match_taxon(patogen_name, 'Genus', 'Acinetobacter')
+            not match_taxon(pathogen_name, 'Genus', 'Acinetobacter')
     ):
         return False
     if notes and any(val in notes.lower() for val in ('esbl', 'ampc', 'kpc')):
@@ -174,36 +174,36 @@ def rule345(patogen_name: str, ast: AST, notes: Optional[str] = None):
     return False
 
 
-def rule67(patogen_name: str, *args):
+def rule67(pathogen_name: str, *args):
     """
     rule67 refers to
     6) szczepy chorobotwórcze laseczki beztlenowej Clostridium difficile oraz wytwarzane przez nie toksyny A i B;
     AND
     7) laseczka beztlenowa Clostridium perfringens;
-    :param patogen_name: str - name of patogen to be checked
+    :param pathogen_name: str - name of pathogen to be checked
     :param ast: AST (parsed ast, ParsedData subclass instance)
     :param notes:
     :return:
      """
     if (
-            match_taxon(patogen_name, 'Species', 'Clostridium difficile')
+            match_taxon(pathogen_name, 'Species', 'Clostridium difficile')
             or
-            match_taxon(patogen_name, 'Species', 'Clostridium perfringens')
+            match_taxon(pathogen_name, 'Species', 'Clostridium perfringens')
     ):
         return True
     return False
 
 
-def rule8(patogen_name: str, ast: AST, notes: Optional[str] = None):
+def rule8(pathogen_name: str, ast: AST, notes: Optional[str] = None):
     """
     rule8 refers to
     8) dwoinka zapalenia płuc (Streptococcus pneumoniae) oporna na cefalosporyny III generacji lub penicylinę;
-    :param patogen_name: str - name of patogen to be checked
+    :param pathogen_name: str - name of pathogen to be checked
     :param ast: AST (parsed ast, ParsedData subclass instance)
     :param notes:
     :return:
      """
-    if not match_taxon(patogen_name, 'Species', 'Streptococcus pneumoniae'):
+    if not match_taxon(pathogen_name, 'Species', 'Streptococcus pneumoniae'):
         return False
     if match_antibiotic_group_resistant(ast, CEPHALOSPORINS3):
         return True
@@ -213,20 +213,26 @@ def rule8(patogen_name: str, ast: AST, notes: Optional[str] = None):
 ALERT_RULES = (rule1, rule2, rule345, rule67, rule8)
 
 
-def is_alert_patogen(patogen_name: str, ast: AST):
-    return any(rule(patogen_name, ast) for rule in ALERT_RULES)
+def is_alert_pathogen(pathogen_name: str, ast: AST):
+    return any(rule(pathogen_name, ast) for rule in ALERT_RULES)
 
 
-def alert_patogen_rules(culture_result: ParsedCultureResult) -> bool:
+def alert_pathogen_rules(culture_result: ParsedCultureResult) -> bool:
     """
     this function is to be applied to parsed content column of cultures stored in adb
     :param culture_result:
     :return:
     """
-    for culture in culture_result:
-        if (patogen := culture.get('patogen', None)) and (ast := culture.get('ast', None)):
-            if is_alert_patogen(patogen, ast):
+    if isinstance(culture_result, ParsedCultureResult):
+        for culture in culture_result:
+            if (pathogen := culture.get('pathogen', None)) and (ast := culture.get('ast', None)):
+                if is_alert_pathogen(pathogen, ast):
+                    return True
+    elif isinstance(culture_result, ParsedCulture):
+        if (pathogen := culture_result.get('pathogen', None)) and (ast := culture_result.get('ast', None)):
+            if is_alert_pathogen(pathogen, ast):
                 return True
+
     return False
 
 
@@ -238,5 +244,5 @@ def extract_alert_column(df: pd.DataFrame, column: Union[str, int], alert_column
 
     values = df[column]
     with multiprocessing.Pool(processes=4) as pool:
-        df[alert_column_name] = pool.map(alert_patogen_rules, values)
+        df[alert_column_name] = pool.map(alert_pathogen_rules, values)
     return df

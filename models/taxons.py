@@ -95,8 +95,12 @@ class Taxon(Generic[T]):
         return hash(str(id(self)))
 
     def __eq__(self, other):
-        validate_type(other, Taxon, parameter_name='other', error_message=f'Could not compare Taxon to {type(other)}')
-        return repr(self) == repr(other)
+        # this was hashed out as unnecessarily restrictive
+        # validate_type(other, Taxon, parameter_name='other', error_message=f'Could not compare Taxon to {type(other)}')
+        try:
+            return (self.__class__, self.name) == (other.__class__, other.name)
+        except AttributeError:
+            return False
 
     def __repr__(self):
         return f'<{self.__class__.__name__}: {self.name}>'
@@ -224,6 +228,12 @@ class Taxon(Generic[T]):
             return bool(self.domain)
         except AttributeError:
             return False
+
+    @property
+    def taxon(self):
+        if self.__class__.__name__ == 'Taxon':
+            return None
+        return self.__class__.__name__
 
 
 class Domain(Taxon):

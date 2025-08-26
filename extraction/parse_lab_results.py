@@ -55,13 +55,13 @@ def parse_culture(wynik: str) -> Union[List[Dict], None]:
     :return: built-in structures
 
     Comment:
-    Multiple patogens are reported in one result - hence the output is list.
+    Multiple pathogens are reported in one result - hence the output is list.
 
-    Single patogen culture readout is stored in a dictionary
+    Single pathogen culture readout is stored in a dictionary
         Keys of the dictionary are:
             sample  (for sample site)
             description (lab parsed description)
-            patogen (microorganism name)
+            pathogen (microorganism name)
             notes (further lab notes)
             ast (antibiotic sensitivity testing)
 
@@ -69,20 +69,20 @@ def parse_culture(wynik: str) -> Union[List[Dict], None]:
 
     parsed = ParsedCultureResult()
     header = culture_header(wynik)  # parsed
-    patogens: list = re.findall(CULTURE_PARSE_PATOGEN_RE, wynik)
+    pathogens: list = re.findall(CULTURE_PARSE_PATOGEN_RE, wynik)
     asts: list = [parse_antibiogram(abg[0]) for abg in re.findall(CULTURE_PARSE_ABGRAM_RE, wynik)]
 
-    if header and not patogens:  # lab note deteced, no patogen detected
+    if header and not pathogens:  # lab note deteced, no pathogen detected
         parsed.append(header)
 
-    elif header and patogens:  # patogen detected
-        # a loop appending to the ouput list for multiple patogens reported
-        for patogen, ast in zip_longest(patogens, asts, fillvalue=''):
+    elif header and pathogens:  # pathogen detected
+        # a loop appending to the ouput list for multiple pathogens reported
+        for pathogen, ast in zip_longest(pathogens, asts, fillvalue=''):
             result = ParsedCulture(header)
-            result.update({'patogen': patogen, 'ast': ast})
+            result.update({'pathogen': pathogen, 'ast': ast})
             parsed.append(result)
     else:  # unknown circumstances - exception must be reised
-        raise NotImplementedError('Parsed found an unusual pattern.')
+        raise NotImplementedError(f'Parsed found an unusual pattern.\n {wynik}')
 
     if not parsed:
         return None  # if parser unable to parse and Exception not reised
