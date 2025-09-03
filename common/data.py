@@ -5,9 +5,10 @@ this modlule reads source DataFrame
 
 import os
 import pandas as pd
-from ptbmicrobio import LOCAL_PATH
 
-TAXONOMIC_DATA_PATH = os.path.join(LOCAL_PATH, 'data', 'bacteria.csv')
+local_path = os.path.dirname(os.path.dirname(__file__))
+
+TAXONOMIC_DATA_PATH = os.path.join(local_path, 'data', 'bacteria.csv')
 
 
 def load_taxonomic_data(*names):

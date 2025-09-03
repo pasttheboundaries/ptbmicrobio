@@ -10,6 +10,7 @@ from itertools import chain
 from typing import Union, NoReturn, TypeVar, Generic
 from ..common.validation import validate_type
 from ..extraction.functions import normalize_text, rotate_chunk_pairs
+from itertools import takewhile
 
 
 T = TypeVar('T', bound='MyClass')
@@ -74,6 +75,7 @@ class Taxonomy:
 
 
 class Taxon(Generic[T]):
+    hierarchy = -1
     """
     Base class for other taxon classes.
     Also used as an entry point for taxon search with Taxon.find() class method.
@@ -107,6 +109,10 @@ class Taxon(Generic[T]):
 
     def __str__(self):
         return self.name
+
+    def __lt__(self, other):
+        if not isinstance(other, Taxon):
+            raise TypeError(f'Could not compare {self.__class__.__name__} to {type(other)}')
 
     @staticmethod
     def _instantiate_found(taxon_cls, dfs, col) -> Union[None, tuple]:
@@ -235,33 +241,67 @@ class Taxon(Generic[T]):
             return None
         return self.__class__.__name__
 
+    def branch(self):
+        if not hasattr(self, 'hierarchy'):  # Taxon
+            return None
+
+        parents = list(takewhile(lambda x: x.hierarchy <= self.hierarchy, TAXONS_ORDER))
+        return [getattr(self, c.__name__) for c in parents]
+
+    def belongs_to(self, taxon, progressive=False):
+        if isinstance(taxon, Taxon):
+            taxons = [taxon]
+        elif isinstance(taxon, str):
+            taxons = Taxon.find(taxon, first=False, progressive=progressive)
+        else:
+            raise TypeError('Invalid type. Expected Taxon or str.')
+        branch = self.branch()
+        return any(t in branch for t in taxons)
+
 
 class Domain(Taxon):
+    hierarchy = 0
+    parent = None
     pass
 
 
 class Phylum(Taxon):
+    hierarchy = 1
+    parent = Domain
     pass
 
 
 class Class(Taxon):
+    hierarchy = 2
+    parent = Phylum
     pass
 
 
 class Order(Taxon):
+    hierarchy = 3
+    parent = Class
     pass
 
 
 class Family(Taxon):
+    hierarchy = 4
+    parent = Order
     pass
 
 
 class Genus(Taxon):
+    hierarchy = 5
+    parent = Family
     pass
 
 
 class Species(Taxon):
+    hierarchy = 6
+    parent = Genus
     pass
 
 
 TAXONS = {t.__name__: t for t in Taxon.__subclasses__()}
+TAXONS_ORDER = sorted([t for t in Taxon.__subclasses__()], key=lambda x: x.hierarchy)
+
+
