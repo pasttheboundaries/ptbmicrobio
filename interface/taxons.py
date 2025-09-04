@@ -5,11 +5,11 @@ this module defines basic taxon classes
 import pandas as pd
 import numpy as np
 from functools import lru_cache
-from .interface import find, load_taxonomic_data
+from .query import find, load_taxonomic_data
 from itertools import chain
 from typing import Union, NoReturn, TypeVar, Generic
 from ..common.validation import validate_type
-from ..extraction.functions import normalize_text, rotate_chunk_pairs
+from ..common.helpers import normalize_text, rotate_chunk_pairs
 from itertools import takewhile
 
 
@@ -129,7 +129,7 @@ class Taxon(Generic[T]):
             return tuple(taxon_cls(name) for name in df[col])
 
     @classmethod
-    @lru_cache(maxsize=100)
+    @lru_cache(maxsize=1024)
     def find(cls,
              value=None,
              partial=False,
@@ -147,6 +147,8 @@ class Taxon(Generic[T]):
         if set to True , than search is able to omit insignificant words in the string.
         :return:
         """
+        if not value:
+            return None
         value = normalize_text(value)
         if cls == Taxon:
             return cls.find_any(value=value,
@@ -236,7 +238,7 @@ class Taxon(Generic[T]):
             return False
 
     @property
-    def taxon(self):
+    def taxon_name(self):
         if self.__class__.__name__ == 'Taxon':
             return None
         return self.__class__.__name__
@@ -248,7 +250,7 @@ class Taxon(Generic[T]):
         parents = list(takewhile(lambda x: x.hierarchy <= self.hierarchy, TAXONS_ORDER))
         return [getattr(self, c.__name__) for c in parents]
 
-    def belongs_to(self, taxon, progressive=False):
+    def belongs_to(self, taxon: T, progressive=False):
         if isinstance(taxon, Taxon):
             taxons = [taxon]
         elif isinstance(taxon, str):

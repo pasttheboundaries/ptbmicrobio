@@ -6,8 +6,8 @@ import pandas as pd
 from .constants import *
 from ..common.validation import drop_stray_rows
 from ..common.native_types import ParsedData, ParsedCulture, ParsedCultureResult, SensitivityReadout, AST
-from ahdclinicaldash.ptbabx import antibiotic
-from ahdclinicaldash.constants import tags
+from ptbabx import antibiotic
+from .constants import ResistanceTags as tags
 
 
 def is_culture(wynik: str) -> bool:

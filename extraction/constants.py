@@ -10,7 +10,8 @@ CULTURE_PARSE_RESISTANCE_RE = r'(?i)((\b.+):([OWSRI])\s*(MIC:\s*([<=>]{0,2}\d\d?
 CULTURE_PARSE_ABGRAM_RE = r'(?i)(Antybiogram:.*?\s\s((.+):([OWSRI])\s*(MIC:\s*([<=>]{0,2}\d\d?([.,]\d\d?)?\b))?.*\s\s)+)'
 
 # bacterial resistance
-INTERMEDIATE = 'i'
-RESISTANT = 'r'
-SENSITIVE = 's'
-UNKNOWN = 'u'
+class ResistanceTags:
+    INTERMEDIATE = 'i'
+    RESISTANT = 'r'
+    SENSITIVE = 's'
+    UNKNOWN = 'u'

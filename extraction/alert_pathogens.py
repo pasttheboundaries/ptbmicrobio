@@ -24,10 +24,10 @@ oksazolidynony;
 
 import pandas as pd
 from typing import Optional, Union
-from ..models.taxons import Taxon
+from ..interface import Taxon
 from ..common.native_types import AST, ParsedCultureResult, ParsedDataFrame, ParsedCulture
 from ptbabx import antibiotic
-from .constants import RESISTANT
+from .constants import ResistanceTags
 from functools import lru_cache
 import multiprocessing
 
@@ -39,6 +39,7 @@ KARBAPENEMS = antibiotic('meropenem').group
 COLISTIN = antibiotic('kolistyna')
 CEPHALOSPORINS3 = antibiotic('ceftazydym').group
 
+RESISTANT = ResistanceTags.RESISTANT
 
 @lru_cache(maxsize=200)
 def taxon_find(pathogen_name):  # this is a proxy for memoisation purposes

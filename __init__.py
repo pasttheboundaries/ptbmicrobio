@@ -16,7 +16,7 @@ Species.find('klebsiella pneumoniae ssp. pneumoniae') -> None
 """
 
 import os
-from .models.taxons import Taxon, Species, Genus, Phylum, Order, Class, Domain, TAXONS, Family
+from .interface.taxons import Taxon, Species, Genus, Phylum, Order, Class, Domain, TAXONS, Family
 from .common.native_types import AST, ParsedData, ParsedDataFrame,ParsedCulture, ParsedCultureResult, SensitivityReadout
 
 LOCAL_PATH = os.path.dirname(__file__)
