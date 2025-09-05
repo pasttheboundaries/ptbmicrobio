@@ -9015,6 +9015,9 @@ Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Staphylococcus,Staphy
 Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Staphylococcus,Staphylococcus vitulus
 Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Staphylococcus,Staphylococcus warneri
 Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Staphylococcus,Staphylococcus xylosus
+Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Staphylococcus,MRCNS
+Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Staphylococcus,MRSA (Staphylococcus aureus)
+Bacteria,Bacillota,Bacilli,Caryophanales,Staphylococcaceae,Staphylococcus,MSSA (Staphylococcus aureus)
 Bacteria,Bacillota,Bacilli,Caryophanales,Thermicanaceae,Haemobacillus,Haemobacillus shengwangii
 Bacteria,Bacillota,Bacilli,Caryophanales,Thermicanaceae,Thermicanus,Thermicanus aegyptius
 Bacteria,Bacillota,Bacilli,Caryophanales,Thermoactinomycetaceae,Actinobifida,Actinobifida alba
@@ -10219,6 +10222,8 @@ Bacteria,Bacillota,Bacilli,Lactobacillales,Streptococcaceae,Streptococcus,Strept
 Bacteria,Bacillota,Bacilli,Lactobacillales,Streptococcaceae,Streptococcus,Streptococcus waius
 Bacteria,Bacillota,Bacilli,Lactobacillales,Streptococcaceae,Streptococcus,Streptococcus xiaochunlingii
 Bacteria,Bacillota,Bacilli,Lactobacillales,Streptococcaceae,Streptococcus,Streptococcus zalophi
+Bacteria,Bacillota,Bacilli,Lactobacillales,Streptococcaceae,Streptococcus,Streptococcus alpha-hemolytic
+Bacteria,Bacillota,Bacilli,Lactobacillales,Streptococcaceae,Streptococcus,Streptococcus hemolyticus
 Bacteria,Bacillota,Clostridia,Eubacteriales,Anaerovoracaceae,Anaerovorax,Anaerovorax odorimutans
 Bacteria,Bacillota,Clostridia,Eubacteriales,Aristaeellaceae,Aristaeella,Aristaeella hokkaidonensis
 Bacteria,Bacillota,Clostridia,Eubacteriales,Aristaeellaceae,Aristaeella,Aristaeella lactis
