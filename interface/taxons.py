@@ -162,9 +162,10 @@ class Taxon(Generic[T]):
     @classmethod
     def find_any(cls,
                  value=None,
+                 *,
                  partial=False,
-                 first=False, last=False,
-                 progressive=False, force=False) -> Union[tuple, T, NoReturn]:
+                 first=True, last=False,
+                 progressive=True, force=False) -> Union[tuple, T, NoReturn]:
 
         if not progressive:
             li = [tax.find(value, partial=partial, force=force, first=False) for tax in TAXONS.values()]

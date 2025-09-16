@@ -18,7 +18,7 @@ Species.find('klebsiella pneumoniae ssp. pneumoniae') -> None
 import os
 from .interface.taxons import Taxon, Species, Genus, Phylum, Order, Class, Domain, TAXONS, Family
 from .common.native_types import AST, ParsedData, ParsedDataFrame,ParsedCulture, ParsedCultureResult, SensitivityReadout
-
+from .common.ptbserialization import serialize, deserialize, PtbSerializable
 LOCAL_PATH = os.path.dirname(__file__)
 
 __version__ = "0.1.1"

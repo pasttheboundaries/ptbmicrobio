@@ -17,28 +17,33 @@ class PtbSerializable(ABC):
     It has two modes of peration:
 
     A. DECORATING (registering) USER CLASSES
-        @PtbSerializable.register decorator should be used upon a subclass definition
-        This will achieve 2 goals:
-        1) add PtbSerializable to decorated class __bases__ and force joining required methods to the subclass,
-        just as in normal subclassing.
-        Required methods are:
+        @PtbSerializable.register decorator should be used upon a class definition
+
+        ## Registration requirements:
+        Registared class must have the following methods corectry implemented:
         - serialization_init_params(self)
         - serialization_instance_attrs(self)
 
+        Registration will achieve 2 goals:
+        1) add PtbSerializable to decorated class __bases__ and force joining required methods to the subclass,
+        just as in normal subclassing.
+        Required methods : see above.
         for the methods details see methods __doc__strings
 
         2) will register the class with PtbSerializable.SERIALIZABLE_REGISTRY,
         which is necessary for the encoding and decoding
-        while serialization and instantiation of custom classes by
-        hisrobot.exchange.serialize (and deserialize) functions, using json library.
-
+        while serialization and instantiation of registerd classes.
 
     B. Registering foreign types:
-        Any type cane be registered as a foreign serializable type
-        This is performed by calling  PtbSerializable.register_foreign with the type.
+        Any type cane be registered as a foreign serializable type.
+        Foreign registrattion can registere any type but syntax is more complex than PtbSerializable.register.
+        Also foreign types do not have required methods implementd (which is required for simple registration) untill subclassed.
+
+        Foreign registration is performed by calling  PtbSerializable.register_foreign with the type.
         For example:
         PtbSerializable.register_foreign(datetime, serializable_init_params=lambda x: {'*': x.timetuple()[:6]})
         registers datetime.datetime type and defines the serializable_init_params function
+
 
     """
 
@@ -118,7 +123,7 @@ class PtbSerializable(ABC):
     @abstractmethod
     def serialization_init_params(self) -> Any:
         """
-        The return of this method is supposed to be instantiation parameters ot the serialized object.
+        The return of this method is supposed to be instantiation parameters of the serialized object.
         These will be serialized as json objects: array and object (list and dict)
         together with the class of the object.
         During deserialization (decoding) of the instance object of the class,
@@ -128,7 +133,7 @@ class PtbSerializable(ABC):
         like in *args or **kwargs at the method call,
         return a dictionary with keys '*' and or '**'
         like in:
-        {'*' = ('John', 'Dowland'), '**': {'profession':'musician', 'age':34}}
+        {'*': ('John', 'Dowland'), '**': {'profession':'musician', 'age':34}}
 
         this will work for a class with instantiation signature:
         __init__(name, surname, *, profession=None, age=None, **kwargs)
@@ -137,7 +142,7 @@ class PtbSerializable(ABC):
         ATTENTION:
             If instance is to be serialized without instantiation arguments
             {"**":{}}  or {"*":[]} must be returned.
-            This is because serialization_init_params is an obligatory method in hisrobot serializable classes
+            This is because serialization_init_params is an obligatory method in serializable classes
             and None is allowed to be used as legal instantiation parameter ,
             so if None is returned by this method,
             it will be serialized, and treated as instantiation parameter for decoded class, at reinstantiation
@@ -154,7 +159,6 @@ class PtbSerializable(ABC):
         If bool value of return is False - adding attributes after instantiation will be skipped.
         """
         ...
-
 
 def ptbs_preprocess(obj):
     if isinstance(obj, PtbSerializable):
@@ -310,3 +314,8 @@ def deserialize(obj):
 # registering common foreign types
 PtbSerializable.register_foreign(datetime, serializable_init_params=lambda x: {'*': x.timetuple()[:6]})
 
+try:
+    from pandas import Timestamp
+    PtbSerializable.register_foreign(Timestamp, serializable_init_params=lambda x: {'*': x.timetuple()[:6]})
+except ImportError:
+    pass
