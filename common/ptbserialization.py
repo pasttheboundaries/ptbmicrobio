@@ -1,171 +1,73 @@
-from abc import ABC, abstractmethod
-from typing import Any, Optional, Callable
 import json
 from collections.abc import Mapping
+from typing import Any, Optional, Callable
 from datetime import datetime
 
+# Global registries
+SERIALIZABLE_REGISTRY = {}
+FOREIGN_SERIALIZABLE_REGISTRY = {}
 
 TYPE_ANNOTATION_KEY = 'TYPE__'
 INIT_ANNOTATION_KEY = 'INIT__'
 ATTRS_ANNOTATION_KEY = 'ATTRS__'
 
 
-class PtbSerializable(ABC):
+def register(cls):
     """
-    This is an abstract class but should not be used for subclassing in the traditional manner.
-
-    It has two modes of peration:
-
-    A. DECORATING (registering) USER CLASSES
-        @PtbSerializable.register decorator should be used upon a class definition
-
-        ## Registration requirements:
-        Registared class must have the following methods corectry implemented:
-        - serialization_init_params(self)
-        - serialization_instance_attrs(self)
-
-        Registration will achieve 2 goals:
-        1) add PtbSerializable to decorated class __bases__ and force joining required methods to the subclass,
-        just as in normal subclassing.
-        Required methods : see above.
-        for the methods details see methods __doc__strings
-
-        2) will register the class with PtbSerializable.SERIALIZABLE_REGISTRY,
-        which is necessary for the encoding and decoding
-        while serialization and instantiation of registerd classes.
-
-    B. Registering foreign types:
-        Any type cane be registered as a foreign serializable type.
-        Foreign registrattion can registere any type but syntax is more complex than PtbSerializable.register.
-        Also foreign types do not have required methods implementd (which is required for simple registration) untill subclassed.
-
-        Foreign registration is performed by calling  PtbSerializable.register_foreign with the type.
-        For example:
-        PtbSerializable.register_foreign(datetime, serializable_init_params=lambda x: {'*': x.timetuple()[:6]})
-        registers datetime.datetime type and defines the serializable_init_params function
-
-
+    Simple decorator for classes that implement required serialization methods.
+    No inheritance needed - just validates interface and registers.
     """
+    # Validate required methods exist
+    if not hasattr(cls, 'serialization_init_params') or not callable(cls.serialization_init_params):
+        raise NotImplementedError(f'{cls.__name__} must implement serialization_init_params() method')
 
-    # this holds decorated user classes
-    SERIALIZABLE_REGISTRY = dict()
-    # this holds foreign types
-    FOREIGN_SERIALIZABLE_REGISTRY = dict()
+    if not hasattr(cls, 'serialization_instance_attrs') or not callable(cls.serialization_instance_attrs):
+        raise NotImplementedError(f'{cls.__name__} must implement serialization_instance_attrs() method')
 
-    @classmethod
-    def register(cls, subclass):
-        """
-        this is a class decorator
-        The decorated class will be altered so PtbSerializable will be added to the class bases
-        as per PtbSerializable.__doc__
-
-        """
-        try:
-            requirment = callable(subclass.__dict__['serialization_init_params'])
-            if not requirment:
-                raise NotImplementedError(f'PtbSerializable registered class must have serialization_init_params '
-                                          f'method implementd. Read PtbSerializable.serialization_init_params.__doc__')
-        except Exception as e:
-            raise e
-
-        try:
-            requirment = callable(subclass.__dict__['serialization_instance_attrs'])
-            if not requirment:
-                raise NotImplementedError(f'PtbSerializable registered class must have serialization_instance_attrs '
-                                          f'method implementd. Read PtbSerializable.serialization_instance_attrs.__doc__')
-        except Exception as e:
-            raise e
+    # Register the class as-is
+    SERIALIZABLE_REGISTRY[cls.__name__] = cls
+    return cls
 
 
-        bases = tuple([b for b in subclass.__bases__ if b is not object] + [cls])
-        new_type = type(subclass.__name__, bases, dict(subclass.__dict__))
-        PtbSerializable.SERIALIZABLE_REGISTRY[subclass.__name__] = new_type
-        return new_type
+def register_foreign(type_: type,
+                     serializable_init_params: Optional[Callable] = None,
+                     serialization_instance_attrs: Optional[Callable] = None):
+    """Register foreign types for serialization"""
+    if not isinstance(type_, type):
+        raise TypeError('type_ must be a type')
 
-    @classmethod
-    def register_foreign(cls,
-                         type_: type,
-                         serializable_init_params: Optional[Callable] = None,
-                         serialization_instance_attrs: Optional[Callable] = None):
-        """
-        This is a class method to register a foreign type to be serialized.
-        It accepts the following parameters:
-        :param type_: type - a class of object to be serialized eg. datetime.datetime
-        :param serializable_init_params: callable (optional).
-            When called with a serialized instance,
-            it is expected to deliver valid parameters for instantiation of the registerd type.
-            The parameters must be json serializable or further foreign type registration must be provided
-            If this is left None (default),
-                instantiation of type will be performed without parameters on deserialization.
-        :param serialization_instance_attrs: callable (optional):
-            When called with a serialized instance,
-            it is expected to deliver a dict of attributes that will be ascribed to the instance after instantiation.
-            If this is left None (default), no attributes will be ascribed after instantiation.
+    if serializable_init_params and not callable(serializable_init_params):
+        raise TypeError('serializable_init_params must be callable')
 
-        the above  registered methods (functions) will be used for ptbserialization
+    if serialization_instance_attrs and not callable(serialization_instance_attrs):
+        raise TypeError('serialization_instance_attrs must be callable')
 
-        """
-        if not isinstance(type_, type):
-            raise TypeError(f'argument type_ must be type.')
-        if serializable_init_params and not callable(serializable_init_params):
-            raise TypeError(f'serializable_init_params must be callable. See __doc__.')
-        if serialization_instance_attrs and not callable(serialization_instance_attrs):
-            raise TypeError(f'serializable_init_params must be callable. See __doc__.')
+    FOREIGN_SERIALIZABLE_REGISTRY[type_.__name__] = {
+        TYPE_ANNOTATION_KEY: type_,
+        INIT_ANNOTATION_KEY: serializable_init_params,
+        ATTRS_ANNOTATION_KEY: serialization_instance_attrs
+    }
 
-        PtbSerializable.FOREIGN_SERIALIZABLE_REGISTRY.update(
-            {
-                type_.__name__: {TYPE_ANNOTATION_KEY: type_,
-                                 INIT_ANNOTATION_KEY: serializable_init_params,
-                                 ATTRS_ANNOTATION_KEY: serialization_instance_attrs}
-            }
-        )
 
-    @abstractmethod
-    def serialization_init_params(self) -> Any:
-        """
-        The return of this method is supposed to be instantiation parameters of the serialized object.
-        These will be serialized as json objects: array and object (list and dict)
-        together with the class of the object.
-        During deserialization (decoding) of the instance object of the class,
-        these parameters will be passed to the class __init__ so the serialized object is reinstantiated.
+def is_registered_class(obj):
+    """Check if object is from a registered class"""
+    return obj.__class__.__name__ in SERIALIZABLE_REGISTRY
 
-        To achieve unpacking behaviour at reinstantiation,
-        like in *args or **kwargs at the method call,
-        return a dictionary with keys '*' and or '**'
-        like in:
-        {'*': ('John', 'Dowland'), '**': {'profession':'musician', 'age':34}}
 
-        this will work for a class with instantiation signature:
-        __init__(name, surname, *, profession=None, age=None, **kwargs)
-        etc...
+def is_foreign_registered(obj):
+    """Check if object is from a foreign registered type"""
+    return type(obj).__name__ in FOREIGN_SERIALIZABLE_REGISTRY
 
-        ATTENTION:
-            If instance is to be serialized without instantiation arguments
-            {"**":{}}  or {"*":[]} must be returned.
-            This is because serialization_init_params is an obligatory method in serializable classes
-            and None is allowed to be used as legal instantiation parameter ,
-            so if None is returned by this method,
-            it will be serialized, and treated as instantiation parameter for decoded class, at reinstantiation
-            (after deserialization).
-
-        """
-        ...
-
-    @abstractmethod
-    def serialization_instance_attrs(self) -> Optional[dict]:
-        """
-        This method must return a dictionary of instance attributes or boolean False (like: None, 0 , {}, etc..)
-        That will be added to deserializaed instance after reinstantiation
-        If bool value of return is False - adding attributes after instantiation will be skipped.
-        """
-        ...
 
 def ptbs_preprocess(obj):
-    if isinstance(obj, PtbSerializable):
-        return {TYPE_ANNOTATION_KEY: obj.__class__.__name__,
-                INIT_ANNOTATION_KEY: ptbs_preprocess(obj.serialization_init_params()),
-                ATTRS_ANNOTATION_KEY: ptbs_preprocess(obj.serialization_instance_attrs())}
-    elif PtbSerializable.FOREIGN_SERIALIZABLE_REGISTRY.get(type(obj).__name__):
+    """Preprocess objects for serialization"""
+    if is_registered_class(obj):
+        return {
+            TYPE_ANNOTATION_KEY: obj.__class__.__name__,
+            INIT_ANNOTATION_KEY: ptbs_preprocess(obj.serialization_init_params()),
+            ATTRS_ANNOTATION_KEY: ptbs_preprocess(obj.serialization_instance_attrs())
+        }
+    elif is_foreign_registered(obj):
         return preprocess_foreign(obj)
     elif isinstance(obj, Mapping):
         return {k: ptbs_preprocess(v) for k, v in obj.items()}
@@ -176,7 +78,8 @@ def ptbs_preprocess(obj):
 
 
 def preprocess_foreign(obj) -> dict:
-    registered = PtbSerializable.FOREIGN_SERIALIZABLE_REGISTRY[type(obj).__name__]
+    """Handle foreign type preprocessing"""
+    registered = FOREIGN_SERIALIZABLE_REGISTRY[type(obj).__name__]
 
     if init_factory := registered.get(INIT_ANNOTATION_KEY):
         inits = init_factory(obj)
@@ -186,45 +89,29 @@ def preprocess_foreign(obj) -> dict:
     if attrs_factory := registered.get(ATTRS_ANNOTATION_KEY):
         attrs = attrs_factory(obj)
         if not isinstance(attrs, dict):
-            raise TypeError(f'Invalid serialization_instance_attrs registered with PtbSerializable.register_foreign.'
-                            f'expected type dict in return. Got {type(attrs)}')
-        for key, val in attrs.items():
-            attrs[key] = ptbs_preprocess(val)
+            raise TypeError(f'serialization_instance_attrs must return dict, got {type(attrs)}')
+        attrs = {key: ptbs_preprocess(val) for key, val in attrs.items()}
     else:
         attrs = None
 
-    return {TYPE_ANNOTATION_KEY: registered[TYPE_ANNOTATION_KEY].__name__,
-            INIT_ANNOTATION_KEY: inits,
-            ATTRS_ANNOTATION_KEY: attrs}
+    return {
+        TYPE_ANNOTATION_KEY: registered[TYPE_ANNOTATION_KEY].__name__,
+        INIT_ANNOTATION_KEY: inits,
+        ATTRS_ANNOTATION_KEY: attrs
+    }
 
 
 class PtbSerialisationEncoder(json.JSONEncoder):
-
-    def __init__(self, *args, **kawrgs):
-        super().__init__(*args, **kawrgs)
-
     def default(self, obj: Any):
-        if isinstance(obj, PtbSerializable):
+        if is_registered_class(obj) or is_foreign_registered(obj):
             return ptbs_preprocess(obj)
-        super().default(obj)
-
-    def preprocess_ptb_serializable(self, obj) -> dict:
-        return {TYPE_ANNOTATION_KEY: obj.__class__.__name__,
-                INIT_ANNOTATION_KEY: self.preprocess_ptb_serializable(obj.serialization_init_params()),
-                ATTRS_ANNOTATION_KEY: self.preprocess_ptb_serializable(obj.serialization_instance_attrs())}
+        return super().default(obj)
 
 
 class PtbSerialisationDecoder(json.JSONDecoder):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def decode(self, obj: str):
-        # print(type(obj), end='->')
         obj = super().decode(obj)
-        # print(type(obj))
-        obj = self.decode_dispatch(obj)
-        return obj
+        return self.decode_dispatch(obj)
 
     def decode_dispatch(self, obj):
         if isinstance(obj, list):
@@ -238,7 +125,7 @@ class PtbSerialisationDecoder(json.JSONDecoder):
 
     def decode_generic(self, obj):
         if not isinstance(obj, Mapping):
-            raise TypeError('Expected type Mapping')
+            raise TypeError('Expected Mapping')
 
         factory = self.get_factory(obj)
         if not factory:
@@ -248,28 +135,30 @@ class PtbSerialisationDecoder(json.JSONDecoder):
 
         postinit_attrs = obj.get(ATTRS_ANNOTATION_KEY, None)
         if postinit_attrs and isinstance(postinit_attrs, Mapping):
-            instance = self.asign_attrs(instance, postinit_attrs)
+            instance = self.assign_attrs(instance, postinit_attrs)
 
         try:
             instance._was_serialized = True
         except AttributeError:
-            pass  # some classes dont allow atribute ascribing
+            pass
 
         return instance
 
     @staticmethod
     def get_factory(obj: Mapping):
-        factory = PtbSerializable.SERIALIZABLE_REGISTRY.get(obj[TYPE_ANNOTATION_KEY], None)
-        if not factory:
-            registerd = PtbSerializable.FOREIGN_SERIALIZABLE_REGISTRY.get(obj[TYPE_ANNOTATION_KEY], None)
-            if not registerd:
-                factory = None
-            else:
-                factory = registerd[TYPE_ANNOTATION_KEY]
-        if not factory:
-            raise ValueError(f'PtbSerialisationDecoder attempted to reinstantiate {obj[TYPE_ANNOTATION_KEY]},'
-                             f' but could not find any valid record.')
-        return factory
+        class_name = obj[TYPE_ANNOTATION_KEY]
+
+        # Try registered classes first
+        factory = SERIALIZABLE_REGISTRY.get(class_name)
+        if factory:
+            return factory
+
+        # Try foreign registered types
+        foreign_reg = FOREIGN_SERIALIZABLE_REGISTRY.get(class_name)
+        if foreign_reg:
+            return foreign_reg[TYPE_ANNOTATION_KEY]
+
+        raise ValueError(f'Cannot find factory for {class_name}')
 
     def instantiate_serialized(self, factory, args):
         args = self.decode_dispatch(args)
@@ -289,33 +178,44 @@ class PtbSerialisationDecoder(json.JSONDecoder):
             return factory()
 
     @staticmethod
-    def asign_attrs(instance, postinit_attrs: Mapping):
+    def assign_attrs(instance, postinit_attrs: Mapping):
         for attr, attr_value in postinit_attrs.items():
-            instance.__setattr__(attr, attr_value)
+            setattr(instance, attr, attr_value)
         return instance
 
 
 def serialize(obj):
-    """
-    this is extension of the json.dumps() with emploed PtbSerialisationEncoder
-    It serializes all classes registered by PtbSerializable
-    """
+    """Serialize objects to JSON string"""
     return json.dumps(ptbs_preprocess(obj), cls=PtbSerialisationEncoder)
 
 
 def deserialize(obj):
-    """
-    this is an extension of the json.loads() with employed PtbSerialisationDecoder
-    It deserializes all classes registered by PtbSerializable
-    """
+    """Deserialize JSON string to objects"""
     return json.loads(obj, cls=PtbSerialisationDecoder)
 
 
-# registering common foreign types
-PtbSerializable.register_foreign(datetime, serializable_init_params=lambda x: {'*': x.timetuple()[:6]})
+class PtbSerializable:
+    """Backward compatibility facade"""
+    SERIALIZABLE_REGISTRY = SERIALIZABLE_REGISTRY
+    FOREIGN_SERIALIZABLE_REGISTRY = FOREIGN_SERIALIZABLE_REGISTRY
+
+    @classmethod
+    def register(cls, subclass):
+        """Delegate to global register function"""
+        return register(subclass)
+
+    @classmethod
+    def register_foreign(cls, type_: type, **kwargs):
+        """Delegate to global register_foreign function"""
+        return register_foreign(type_, **kwargs)
+
+
+# Register common foreign types
+register_foreign(datetime, serializable_init_params=lambda x: {'*': x.timetuple()[:6]})
 
 try:
     from pandas import Timestamp
-    PtbSerializable.register_foreign(Timestamp, serializable_init_params=lambda x: {'*': x.timetuple()[:6]})
+
+    register_foreign(Timestamp, serializable_init_params=lambda x: {'*': x.timetuple()[:6]})
 except ImportError:
     pass

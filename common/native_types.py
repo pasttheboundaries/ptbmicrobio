@@ -1,7 +1,7 @@
 from collections import namedtuple
 import pandas as pd
 from .ptbserialization import PtbSerializable
-
+from dataclasses import dataclass
 
 class ParsedData:
     """
@@ -42,6 +42,25 @@ class AST(ParsedData, dict):  #antibiotic sensitivity testing
 
     def serialization_instance_attrs(self):
         pass
+
+# @PtbSerializable.register
+# @dataclass
+# class SensitivityReadout:
+#     """
+#     (resistance_categorical, MIC)
+#     """
+#     resistance: str = None
+#     mic: str = None
+#
+#     def __repr__(self):
+#         return f'<{self.__class__.__name__} resistance:{self.resistance}, mic:{self.mic}>'
+#
+#     def serialization_init_params(self):
+#         return {"resistance": self.resistance, "mic": self.mic}
+#
+#     def serialization_instance_attrs(self):
+#         pass
+
 
 @PtbSerializable.register
 class SensitivityReadout(namedtuple('SensitivityReadout', field_names=('resistance', 'mic'))):
