@@ -239,7 +239,7 @@ class Taxon(Generic[T]):
             return False
 
     @property
-    def taxon_name(self):
+    def rank(self):
         if self.__class__.__name__ == 'Taxon':
             return None
         return self.__class__.__name__
