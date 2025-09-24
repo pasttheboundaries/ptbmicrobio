@@ -69,10 +69,14 @@ class SensitivityReadout(namedtuple('SensitivityReadout', field_names=('resistan
     """
 
     def __repr__(self):
-        return f'<{self.__class__.__name__} resistance:{self.resistance}, mic:{self.mic}>'
+        return f'<res:{self.resistance}, mic:{self.mic}>'
 
     def serialization_init_params(self):
         return {'*': tuple(self)}
 
     def serialization_instance_attrs(self):
         pass
+
+    @property
+    def res(self):
+        return self.resistance
