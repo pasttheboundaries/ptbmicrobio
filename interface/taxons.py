@@ -94,7 +94,7 @@ class Taxon(Generic[T]):
         return self.__getattribute__(item)
 
     def __hash__(self):
-        return hash(str(id(self)))
+        return hash(f'{self.name}{self.rank}')
 
     def __eq__(self, other):
         # this was hashed out as unnecessarily restrictive
@@ -239,6 +239,10 @@ class Taxon(Generic[T]):
             return False
 
     @property
+    def name_(self):
+        return self.name.replace(' ', '_')
+
+    @property
     def rank(self):
         if self.__class__.__name__ == 'Taxon':
             return None
@@ -251,6 +255,7 @@ class Taxon(Generic[T]):
         parents = list(takewhile(lambda x: x.hierarchy <= self.hierarchy, TAXONS_ORDER))
         return [getattr(self, c.__name__) for c in parents]
 
+    @lru_cache(maxsize=1024)
     def belongs_to(self, taxon: T, progressive=False):
         if isinstance(taxon, Taxon):
             taxons = [taxon]
